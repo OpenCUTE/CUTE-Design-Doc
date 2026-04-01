@@ -1,0 +1,106 @@
+site_name: CUTE Design Document
+site_description: CPU 集成张量加速器设计文档
+site_author: CUTE Team
+
+# 抑制 mkdocs-material 关于 MkDocs 2.0 的警告
+# 详情：https://squidfunk.github.io/mkdocs-material/blog/2026/02/18/mkdocs-2.0/
+environment:
+  MKDOCS_MATERIAL_WARN: "false"
+
+theme:
+  name: material
+  language: zh
+  features:
+    - navigation.tabs
+    - navigation.indexes
+    - navigation.tracking
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.mermaid
+    - content.code.copy
+  palette:
+    - scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: 切换暗色模式
+    - scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: 切换亮色模式
+
+plugins:
+  - search:
+      lang:
+        - zh
+        - en
+      separator: '[\s\-\.]+|(?=[\u4e00-\u9fff\u3400-\u4dbf])|(?<=[\u4e00-\u9fff\u3400-\u4dbf])'
+  - mermaid2
+
+markdown_extensions:
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:mermaid2.fence_mermaid
+  - pymdownx.arithmatex:
+      generic: true
+  - tables
+  - footnotes
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+nav:
+  - 首页: index.md
+  - 项目概述:
+      - overview/index.md
+      - 项目背景与目标: overview/introduction.md
+      - 整体架构总览: overview/architecture-overview.md
+      - 快速上手指南: overview/getting-started.md
+  - 硬件设计:
+      - hardware/index.md
+      - 计算引擎:
+          - hardware/compute-engine/index.md
+          - Matrix Tensor Engine: hardware/compute-engine/mte.md
+          - ReducePE 运算单元: hardware/compute-engine/reduce-pe.md
+          - 后处理操作: hardware/compute-engine/after-ops.md
+      - 存储系统:
+          - hardware/memory-system/index.md
+          - A/B/C Scratchpad: hardware/memory-system/scratchpads.md
+          - Scale Factor Scratchpad: hardware/memory-system/scale-scratchpads.md
+          - 数据流控制器: hardware/memory-system/data-controllers.md
+          - 内存加载器: hardware/memory-system/memory-loaders.md
+          - 本地 MMU: hardware/memory-system/local-mmu.md
+      - 控制逻辑:
+          - hardware/control-logic/index.md
+          - 指令译码与调度: hardware/control-logic/task-controller.md
+          - 硬件参数配置: hardware/control-logic/cute-parameters.md
+          - YGJK / RoCC 接口: hardware/control-logic/cute2ygjk.md
+      - 集成方案:
+          - hardware/integration/index.md
+          - Rocket 核集成: hardware/integration/rocket-core.md
+          - BOOM 核集成: hardware/integration/boom-core.md
+          - Shuttle 核集成: hardware/integration/shuttle-core.md
+  - 指令集:
+      - instruction-set/index.md
+      - YGJK 指令编码: instruction-set/instruction-encoding.md
+      - 融合算子说明: instruction-set/fusion-operators.md
+      - 指令速查表: instruction-set/instruction-reference.md
+  - 数据类型:
+      - datatypes/index.md
+      - 精度格式总览: datatypes/precision-formats.md
+      - 量化与 Block-Scale: datatypes/quantization.md
+      - 数据类型支持矩阵: datatypes/datatype-support.md
+  - 软件与测试:
+      - software/index.md
+      - 测试框架设计: software/test-framework.md
+      - 测试编写指南: software/test-writing-guide.md
+      - DRAMSim 配置说明: software/dramsim-config.md
+      - 基准测试结果: software/benchmark-results.md
+  - 附录:
+      - appendix/index.md
+      - 术语表: appendix/glossary.md
+      - 参考文献: appendix/references.md
+      - 变更记录: appendix/changelog.md

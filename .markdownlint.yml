@@ -1,0 +1,8 @@
+# Markdown lint 配置
+# 继承默认规则，针对中文文档做以下调整
+
+MD009: false      # 允许行尾空格（中文排版习惯）
+MD013: false      # 不限制行长度（中文段落不适合硬换行）
+MD033: false      # 允许内嵌 HTML（WaveDrom/Mermaid 需要）
+MD041: false      # 允许非标题开头（index.md 可能以导航开头）
+MD024: false      # 允许重复标题名（不同层级 index.md 会重复）
