@@ -23,7 +23,7 @@ TaskController 是 CUTE 的控制中枢，负责从 CPU 接收矩阵运算指令
 
 核心职责：
 
-1. **指令接收与组装**：通过 YGJK 接口接收 CPU 发来的配置指令和计算指令，将多次配置（张量地址、维度、卷积参数等）组装为完整的 MacroInst
+1. **指令接收与组装**：通过 RoCC 异构接口接收 CPU 发来的配置指令和计算指令，将多次配置（张量地址、维度、卷积参数等）组装为完整的 MacroInst
 2. **宏→微指令分解**：将一条 MacroInst 按分块策略分解为多组 Load/Compute/Store 微指令三元组
 3. **三阶段调度**：管理 Load → Compute → Store 三阶段的执行流水线
 4. **双缓冲管理**：跟踪 SCP 空闲状态，交替选择 SCP 组
@@ -33,7 +33,7 @@ TaskController 是 CUTE 的控制中枢，负责从 CPU 接收矩阵运算指令
 ### 4.1 整体结构
 
 ```
-CPU (YGJK) ──config──→ MacroInst_Reg ──→ MacroInst_FIFO (depth=4)
+CPU (RoCC) ──config──→ MacroInst_Reg ──→ MacroInst_FIFO (depth=4)
                                                      │
                                                      ▼
                                               宏→微分解器
@@ -119,7 +119,7 @@ C_SCP_Free  = Vec(2, Bool())
 
 | 信号名 | 方向 | 说明 |
 |--------|------|------|
-| `ygjkctrl` | Input (Flipped) | YGJK 控制接口（来自 CPU） |
+| `ygjkctrl` | Input (Flipped) | RoCC 异构控制接口（来自 CPU，源码中命名为 `ygjkctrl`） |
 | `ADC/BDC/CDC_MicroTask_Config` | Output | 各 DataController 的微任务配置 |
 | `AML/BML/ASL/BSL/CML_MicroTask_Config` | Output | 各 Loader 的微任务配置 |
 | `MTE_MicroTask_Config` | Output | MTE 的微任务配置 |
@@ -131,7 +131,7 @@ C_SCP_Free  = Vec(2, Bool())
 TaskController 是 CUTE 的控制中心，与所有模块交互：
 
 ```
-CPU ──YGJK──→ TaskController ──┬──→ Loaders (AML/BML/ASL/BSL/CML)
+CPU ──RoCC──→ TaskController ──┬──→ Loaders (AML/BML/ASL/BSL/CML)
                                 ├──→ DataControllers (ADC/BDC/CDC/ASC/BSC)
                                 ├──→ MatrixTE
                                 ├──→ AfterOps

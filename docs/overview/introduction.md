@@ -2,7 +2,7 @@
 
 ## 1. 概述
 
-CUTE（**C**PU-centric and **U**ltra-u**T**ilized **E**ngine）是一个统一且可配置的 CPU 矩阵扩展架构，旨在以最小的设计开销实现跨 CPU 平台的敏捷集成与高效执行。
+CUTE（**C**PU-centric and **U**ltra-utilized **T**ensor **E**ngine）是一个统一且可配置的 CPU 矩阵扩展架构，旨在以最小的设计开销实现跨 CPU 平台的敏捷集成与高效执行。
 
 CUTE 的三个核心设计原则：
 
@@ -38,7 +38,7 @@ CUTE 的解决方案：
 
 ## 3. 性能亮点
 
-基于 DAC 2025 论文（CUTE v2）的评估结果：
+基于 DAC 2026 论文（CUTE v2）的评估结果：
 
 | 指标 | 数据 |
 |------|------|
@@ -61,7 +61,7 @@ CUTE 的解决方案：
 ## 5. 相关论文
 
 - [CUTE v1: A scalable CPU-centric and Ultra-utilized Tensor Engine for convolutions](https://www.sciencedirect.com/science/article/pii/S1383762124000432)
-- [CUTE v2: DAC 2025](https://github.com/OpenCUTE/CUTE) — 统一可配置的 CPU 矩阵扩展架构
+- [CUTE v2: DAC 2026](https://github.com/OpenCUTE/CUTE) — 统一可配置的 CPU 矩阵扩展架构
 
 ## 6. 目标受众
 

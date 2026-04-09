@@ -332,7 +332,7 @@ CUTE 版本 {{ cute_version }}，基于 Chisel {{ chisel_version }} 实现。
 
 | 术语 | 全称 | 说明 |
 |------|------|------|
-| CUTE | CPU Unified Tensor Engine | CPU 集成张量加速器 |
+| CUTE | CPU-centric and Ultra-utilized Tensor Engine | CPU 集成张量加速器 |
 | MTE  | Matrix Tensor Engine | 矩阵张量引擎 |
 | PE   | Processing Element | 处理单元 |
 | MAC  | Multiply-Accumulate | 乘加运算 |

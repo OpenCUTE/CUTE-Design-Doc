@@ -1,11 +1,11 @@
-# YGJK / RoCC 接口
+# RoCC 接口
 
 ## 1. 术语说明
 
 | 术语 | 说明 |
 |------|------|
-| YGJK | CUTE 的自定义指令扩展名称 |
 | RoCC | Rocket Custom Coprocessor，Rocket 的协处理器接口协议 |
+| CUTE2YGJK | CUTE 的 RoCC 协议适配模块（源码中的模块名称） |
 | TileLink | RISC-V 芯片内互连总线协议 |
 | funct | RoCC 指令中的功能码字段 |
 
@@ -29,10 +29,10 @@ RoCC 指令的 `funct` 字段决定指令类型：
 
 | funct 范围 | 目标 | 说明 |
 |-----------|------|------|
-| 0-63 | YGJK 查询处理器 | 状态查询指令（直接 RoCC 响应） |
+| 0-63 | 状态查询处理器 | 状态查询指令（直接 RoCC 响应） |
 | ≥64 | CUTE 内部命令 | 取低 6 位作为内部 funct（0-18） |
 
-### 3.2 YGJK 查询指令
+### 3.2 状态查询指令
 
 | funct | 名称 | 说明 |
 |-------|------|------|
@@ -66,7 +66,7 @@ CPU (RISC-V)
     │ RoCC 指令 (funct + rs1 + rs2 + rd)
     ▼
 RoCC2CUTE ─── 指令分发
-    ├── funct 0-63 ──→ YGJK 查询响应 (直接返回)
+    ├── funct 0-63 ──→ 状态查询响应 (直接返回)
     └── funct ≥64  ──→ CUTE 内部控制 ──→ TaskController
                                                     │
                                                     ▼
@@ -130,7 +130,7 @@ checkMatmul();                            // 等待最后一个 tile
 ## 7. 与其他模块的交互
 
 ```
-CPU ──RoCC──→ CUTE2YGJK ──YGJKControl──→ TaskController
+CPU ──RoCC──→ CUTE2YGJK ──RoCCControl──→ TaskController
                   │
                   └──Cute2TL──→ TileLink Bus ──→ LLC/DRAM
 ```
@@ -138,4 +138,4 @@ CPU ──RoCC──→ CUTE2YGJK ──YGJKControl──→ TaskController
 ## 8. 参考
 
 - 源码：`src/main/scala/CUTE2YGJK.scala`、`src/main/scala/config_ygjk.scala`
-- 论文：CUTE v2 (DAC 2025) — Section 3 Architecture Overview
+- 论文：CUTE v2 (DAC 2026) — Section 3 Architecture Overview

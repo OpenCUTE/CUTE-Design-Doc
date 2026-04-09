@@ -44,7 +44,7 @@ Phase 4 ─── 自动化与发布
 ```markdown
 # CUTE 设计文档
 
-CUTE（CPU Unified Tensor Engine）是一个集成在 RISC-V 处理器中的张量加速器，用于高效执行矩阵运算。
+CUTE（CPU-centric and Ultra-utilized Tensor Engine）是一个集成在 RISC-V 处理器中的张量加速器，用于高效执行矩阵运算。
 
 ## 快速导航
 
