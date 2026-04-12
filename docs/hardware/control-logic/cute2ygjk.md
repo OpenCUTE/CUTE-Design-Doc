@@ -5,7 +5,7 @@
 | 术语 | 说明 |
 |------|------|
 | RoCC | Rocket Custom Coprocessor，Rocket 的协处理器接口协议 |
-| CUTE2YGJK | CUTE 的 RoCC 协议适配模块（源码中的模块名称） |
+| CUTE2YGJK | CUTE异构接口， RoCC 协议适配模块 |
 | TileLink | RISC-V 芯片内互连总线协议 |
 | funct | RoCC 指令中的功能码字段 |
 
@@ -59,21 +59,7 @@ RoCC 指令的 `funct` 字段决定指令类型：
 
 ## 4. 微架构设计
 
-### 4.1 协议栈
-
-```
-CPU (RISC-V)
-    │ RoCC 指令 (funct + rs1 + rs2 + rd)
-    ▼
-RoCC2CUTE ─── 指令分发
-    ├── funct 0-63 ──→ 状态查询响应 (直接返回)
-    └── funct ≥64  ──→ CUTE 内部控制 ──→ TaskController
-                                                    │
-                                                    ▼
-                                            Cute2TL ──→ TileLink Bus ──→ LLC/DRAM
-```
-
-### 4.2 关键组件
+### 4.1 关键组件
 
 | 组件 | 功能 |
 |------|------|
@@ -82,13 +68,13 @@ RoCC2CUTE ─── 指令分发
 | `CUTE2TLImp` | LazyModule 实现，连接到 TileLink 总线 |
 | `CUTETile` | 包装 CUTEV2Top + RoCC 接口的顶层模块 |
 
-### 4.3 Source ID 管理
+### 4.2 Source ID 管理
 
 - 维护 in-flight TileLink 事务的 Source ID 映射
 - 一致性请求和非一致性请求使用不同的 ID 范围
 - 响应通过 Source ID 匹配路由回正确的请求方
 
-## 5. 接口寄存器（论文定义）
+## 5. 接口寄存器
 
 | 字段 | 类型 | 说明 |
 |------|------|------|

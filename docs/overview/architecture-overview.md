@@ -2,45 +2,9 @@
 
 ## 1. 系统定位
 
-CUTE 作为 RISC-V 处理器的 RoCC 协处理器工作，位于 CPU 核内部，通过 TileLink 总线访问主存。
+CUTE 作为 CPU 的矩阵扩展协处理器工作，位于 CPU 核内部，通过 TileLink 总线访问主存。CUTE 支持 RoCC 和 CSR 两种接口方式与 CPU 通信，具体集成方式取决于目标 CPU 平台（详见[集成方案](../hardware/integration/index.md)）。
 
-```mermaid
-graph TB
-    subgraph CPU["RISC-V CPU Core"]
-        CORE["CPU 流水线"]
-        ROCC["RoCC 接口"]
-    end
-
-    subgraph CUTE_ACC["CUTE 加速器"]
-        TC["TaskController<br/>指令译码与调度"]
-        MMU["LocalMMU<br/>地址翻译"]
-
-        subgraph MEM["存储系统"]
-            ASP["A Scratchpad ×2<br/>(双缓冲)"]
-            BSP["B Scratchpad ×2"]
-            CSP["C Scratchpad ×2"]
-            ASSP["A Scale Scratchpad ×2"]
-            BSSP["B Scale Scratchpad ×2"]
-        end
-
-        subgraph COMP["计算引擎"]
-            MTE["MatrixTE<br/>(M×N PE 阵列)"]
-        end
-    end
-
-    subgraph EXT["外部"]
-        DRAM["DRAM / LLC"]
-    end
-
-    CORE -->|RoCC 指令| ROCC
-    ROCC -->|命令/响应| TC
-    TC -->|加载任务| MEM
-    TC -->|计算任务| COMP
-    MMU <-->|TileLink| DRAM
-    MEM -->|输入数据| COMP
-    COMP -->|结果| MEM
-    MEM -->|存储任务| MMU
-```
+![CUTE整体架构图](v3.png)
 
 ## 2. 四大子系统
 
@@ -49,40 +13,20 @@ graph TB
 | **控制逻辑** | TaskController, CUTE2YGJK | 接收 CPU 指令，分解为微任务，调度执行 |
 | **存储系统** | Scratchpads, Scale Scratchpads, DataControllers, ScaleControllers, MemoryLoaders, ScaleLoaders, LocalMMU | 数据搬运、缓冲、缩放因子管理、地址翻译 |
 | **计算引擎** | MatrixTE, FReducePE, AfterOps | 矩阵乘法运算和后处理 |
-| **接口集成** | CUTE2YGJK, Cute2TL | RoCC 协议适配、TileLink 总线接口 |
+| **接口集成** | CUTE2YGJK, Cute2TL | 协处理器接口适配（RoCC/CSR）、TileLink 总线接口 |
 
 ## 3. 三阶段执行流水线
 
 CUTE 的计算采用 **Load → Compute → Store** 三阶段流水线，支持跨 tile 重叠执行：
 
-```mermaid
-gantt
-    title CUTE 三阶段流水线执行时序
-    dateFormat X
-    axisFormat %s
-
-    section Tile 0
-    Load A/B/C/Scale 到 SCP0      :l0, 0, 3
-    MTE 计算 (SCP0 数据)           :c0, 3, 5
-    Store D 到主存                  :s0, 5, 7
-
-    section Tile 1
-    Load A/B/C/Scale 到 SCP1      :l1, 3, 6
-    MTE 计算 (SCP1 数据)           :c1, 6, 8
-    Store D 到主存                  :s1, 8, 10
-
-    section Tile 2
-    Load A/B/C/Scale 到 SCP0      :l2, 6, 9
-    MTE 计算 (SCP0 数据)           :c2, 9, 11
-    Store D 到主存                  :s2, 11, 13
-```
+![CUTE 双缓冲流水线时序](pipeline.png)
 
 **双缓冲机制**：所有 Scratchpad（包括数据 Scratchpad 和 Scale Scratchpad）均实例化 ×2，当前 tile 的 Compute 阶段使用 SCP[0] 的数据时，下一个 tile 的 Load 阶段同时向 SCP[1] 写入新数据。TaskController 通过 `SCPControlInfo` 信号交替选择 Scratchpad 组。
 
 ## 4. 数据流路径
 
 ```
-CPU 发送 RoCC 配置指令
+CPU 发送矩阵乘法配置指令（通过协处理器接口）
   → TaskController 组装 MacroInst
   → TaskController 分解为 Load/Compute/Store 微指令三元组
 
@@ -125,8 +69,6 @@ CPU 发送 RoCC 配置指令
 | `VectorWidth` | 向量运算宽度 (bit) | 256 | |
 | `MemoryDataWidth` | 内存数据宽度 (bit) | 64 | |
 | `ScaleWidth` | 缩放因子位宽 (bit) | 自动推导 | `ReduceWidthByte × 8 × ScaleElementWidth / MinDataTypeWidth / MinGroupSize` |
-| `AScaleNSlices` | A Scale Scratchpad slice 数 | 自动推导 | `outsideDataWidth / ScaleWidth / ReduceGroupSize` |
-| `BScaleNSlices` | B Scale Scratchpad slice 数 | 自动推导 | `outsideDataWidth / ScaleWidth / ReduceGroupSize` |
 
 ## 6. 性能配置预设
 

@@ -30,27 +30,7 @@ TaskController 是 CUTE 的控制中枢，负责从 CPU 接收矩阵运算指令
 
 ## 4. 微架构设计
 
-### 4.1 整体结构
-
-```
-CPU (RoCC) ──config──→ MacroInst_Reg ──→ MacroInst_FIFO (depth=4)
-                                                     │
-                                                     ▼
-                                              宏→微分解器
-                                              (Tiling Loop)
-                                               ┌──┼──┐
-                                               ▼  ▼  ▼
-                                    Load_Q  Compute_Q  Store_Q
-                                     (4)      (4)       (4)
-                                               │  │  │
-                                               ▼  ▼  ▼
-                                    Load_FSM  Compute_FSM  Store_FSM
-                                     │          │            │
-                                     ▼          ▼            ▼
-                                  Loaders    MTE/DCs       CML
-```
-
-### 4.2 指令组装
+### 4.1 指令组装
 
 CPU 通过多条 RoCC 指令逐步配置一个矩阵乘法任务：
 
@@ -69,7 +49,7 @@ CPU 通过多条 RoCC 指令逐步配置一个矩阵乘法任务：
 
 配置指令逐步填充 `MacroInst_Reg` 的各字段，`SEND_MACRO_INST` 将完整配置推入 `MacroInst_FIFO`。
 
-### 4.3 Tiling 循环分解
+### 4.2 Tiling 循环分解
 
 MacroInst 按 tile 大小（`Tensor_M × Tensor_N × Tensor_K`）分解为多个微指令。嵌套循环顺序：
 
@@ -88,7 +68,7 @@ for M_tile in range(0, M, Tensor_M):
 - GEMM：直接按 M→N→K 三层循环分块
 - 卷积：增加 KH→KW 两层循环，并计算 im2col 参数
 
-### 4.4 三阶段 FSM
+### 4.3 三阶段 FSM
 
 每个阶段独立的 2 状态 FSM：
 
@@ -103,7 +83,7 @@ idle ──(MicroInst 可用 && 所有子模块就绪)──→ issue
 
 **资源依赖追踪**：三个 FIFO（`LoadMicroInst_Resource_Info_FIFO`、`ComputeMicroInst_Resource_Info_FIFO`、`StoreMicroInst_Resource_Info_FIFO`记录阶段间的资源依赖，确保 Compute 等待对应 Load 完成，Store 等待对应 Compute 完成。
 
-### 4.5 双缓冲管理
+### 4.4 双缓冲管理
 
 TaskController 维护 SCP 空闲状态向量：
 

@@ -23,12 +23,7 @@
 
 ### 3.1 指令编码格式
 
-```
- 31        25 24    20 19    15 14 13 12 11    7 6      0
-┌───────────┬────────┬────────┬──┬──┬──┬────────┬────────┐
-│  funct7   │  rs2   │  rs1   │xs2│xs1│xd│  rd   │ opcode│
-└───────────┴────────┴────────┴──┴──┴──┴────────┴────────┘
-```
+![inst](inst.png)
 
 | 字段 | 位范围 | 说明 |
 |------|--------|------|
@@ -140,18 +135,11 @@ for OH/OW (or M position):
 
 ### 4.3 状态机
 
-```
-         COMPUTE_START          acc_running=false
-jk_idle ──────────────→ jk_compute ─────────────→ jk_resp
-  ↑                                                  │
-  └──────────── INTERRUPT_ACK (opcode=0x2B) ←─────────┘
-```
-
-| 状态 | 说明 |
-|------|------|
-| `jk_idle` | 空闲，等待 COMPUTE_START |
-| `jk_compute` | 执行中，处理 FIFO 中的 MacroInst |
-| `jk_resp` | 全部完成，等待中断确认 |
+| 当前状态 | 触发条件 | 下一状态 | 说明 |
+|----------|----------|----------|------|
+| `jk_idle` | `COMPUTE_START` | `jk_compute` | 开始执行 FIFO 中的 MacroInst |
+| `jk_compute` | `acc_running=false` | `jk_resp` | 全部 MacroInst 执行完毕 |
+| `jk_resp` | `INTERRUPT_ACK`（opcode=0x2B） | `jk_idle` | CPU 确认中断，回到空闲 |
 
 ## 5. 与其他模块的交互
 

@@ -4,20 +4,7 @@ CUTE 的存储系统负责数据在主存与计算引擎之间的搬运，包含
 
 ## 模块总览
 
-```
-主存 (DRAM/LLC)
-  ↕ TileLink
-LocalMMU (5路仲裁 + TLB翻译)
-  ↕
-┌──────────┬──────────┬──────────┬──────────┬──────────┐
-  AML        BML        CML        ASL        BSL       ← MemoryLoader
-  ↓          ↓          ↓          ↓          ↓
-A SCP×2    B SCP×2    C SCP×2  A SSCP×2  B SSCP×2     ← Scratchpad (双缓冲)
-  ↓          ↓          ↓          ↓          ↓
-  ADC        BDC        CDC        ASC        BSC       ← DataController
-  ↓          ↓          ↓          ↓          ↓
-         MatrixTE (VectorA/B + ScaleA/B)             ← 计算引擎
-```
+![mem](mem-sys.png)
 
 ## 导航
 

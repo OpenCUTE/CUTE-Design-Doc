@@ -15,14 +15,12 @@
 
 CUTE 采用以应用场景驱动的测试架构，从基础功能验证到端到端 ML 模型推理共四个层级：
 
-```mermaid
-graph TB
-    L4["Level 4: 端到端测试<br/>ML 模型推理（BERT/LLaMA/ResNet）"]
-    L3["Level 3: 应用级测试<br/>GEMM 基准（多种尺寸和数据类型）"]
-    L2["Level 2: 功能测试<br/>矩阵乘法 / 卷积正确性验证"]
-    L1["Level 1: 基础测试<br/>加速器通信、FIFO 操作"]
-    L4 --> L3 --> L2 --> L1
-```
+| 层级 | 名称 | 测试内容 |
+|------|------|----------|
+| Level 4 | 端到端测试 | ML 模型推理（BERT/LLaMA/ResNet） |
+| Level 3 | 应用级测试 | GEMM 基准（多种尺寸和数据类型） |
+| Level 2 | 功能测试 | 矩阵乘法 / 卷积正确性验证 |
+| Level 1 | 基础测试 | 加速器通信、FIFO 操作 |
 
 ## 3. 测试层级详解
 
@@ -144,30 +142,9 @@ ARCHFLAGS = -march=rv64imafdcv -mabi=lp64d
 LDFLAGS = -static -specs=htif_nano.specs
 ```
 
-### 4.3 执行流程
-
-```
-C 源码 (.c)
-    ↓ riscv64-unknown-elf-gcc
-RISC-V 二进制 (.riscv)
-    ↓
-Verilator 仿真器
-    ↓ DRAMSim2 模拟内存
-仿真输出（UART 日志 + 性能计数器）
-    ↓ compare_result.py / golden_cute.py
-测试通过/失败
-```
-
-### 4.4 结果验证
-
-| 验证方式 | 脚本 | 说明 |
-|---------|------|------|
-| 参考模型比对 | `compare_result.py` | 比较仿真输出与 Python 参考模型的差异 |
-| Golden 结果比对 | `golden_cute.py` | 预先生成的 Golden 结果直接比对 |
-
 ## 5. 性能分析框架
 
-CUTE 提供 4 级自顶向下性能分析方法论（详见 `scripts/PERFORMANCE_ANALYSIS_GUIDE.md`）：
+CUTE 提供 4 级自顶向下性能分析方法论：
 
 | 级别 | 名称 | 关键指标 |
 |------|------|---------|

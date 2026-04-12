@@ -24,12 +24,6 @@
 
 ADC 和 BDC 负责从 Scratchpad 中按正确顺序读取数据，供给 MTE 计算阵列。
 
-**状态机：**
-```
-idle → mm_task → idle
-         │
-         └→ cal_init → cal_working → cal_end → (循环或结束)
-```
 
 **地址生成：**
 - ADC：`next_addr = M_Iterator × K_IteratorMax + K_Iterator`

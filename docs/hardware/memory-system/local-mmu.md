@@ -62,7 +62,11 @@ LocalMMU 是 CUTE 访问主存的网关，承担两个核心职责：
 - `sourceid2port` 寄存器阵列记录每个 Source ID 对应的请求来源，用于响应路由
 - 写数据从请求阶段前递到响应阶段
 
-## 4. 与其他模块的交互
+## 4. 微架构设计
+
+![mmu](mmu.png)
+
+## 5. 与其他模块的交互
 
 | 交互模块 | 方向 | 说明 |
 |---------|------|------|
@@ -73,7 +77,7 @@ LocalMMU 是 CUTE 访问主存的网关，承担两个核心职责：
 | BScaleLoader | ←→ | B 缩放因子加载请求/响应 |
 | LLC/Cache | ←→ | TileLink 总线（唯一出口） |
 
-## 5. 参考
+## 6. 参考
 
 - 源码：`src/main/scala/LocalMMU.scala`
 - 任务类型定义：`LocalMMUTaskType`（`CUTEParameters.scala`）
