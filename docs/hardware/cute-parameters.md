@@ -21,8 +21,6 @@ CUTE 的所有硬件参数集中在 `CUTEParameters.scala` 中定义，通过 Sc
 | 参数 | 含义 | 默认值 |
 |------|------|--------|
 | `outsideDataWidth` | 外部总线数据宽度 (bit) | 512 |
-| `MemoryDataWidth` | 内存数据宽度 (bit) | 64 |
-| `VectorWidth` | 向量宽度 (bit) | 256 |
 | `ReduceWidthByte` | 归约宽度（字节） | 32 |
 | `ResultWidthByte` | 结果宽度（字节） | 4 |
 
@@ -56,7 +54,7 @@ CUTE 的所有硬件参数集中在 `CUTEParameters.scala` 中定义，通过 Sc
 
 ## 3. 性能预设配置
 
-| 配置名 | Matrix_M | Matrix_N | ReduceWidthByte | 估算性能 |
+| 配置名 | Matrix_M | Matrix_N | ReduceWidthByte | 估算性能(8bit) |
 |--------|----------|----------|-----------------|---------|
 | `CUTE_32Tops` | 16 | 16 | 32 | 32 TOPS |
 | `CUTE_16Tops` | 8 | 8 | 64 | 16 TOPS |
@@ -86,10 +84,6 @@ CUTE 支持 13 种数据类型，4-bit 编码（`DataTypeBitWidth = 4`）：
 | 11 | `DataTypefp8e4m3F32` | FP8 E4M3 | FP8 E4M3 | FP32 | 否 |
 | 12 | `DataTypefp8e5m2F32` | FP8 E5M2 | FP8 E5M2 | FP32 | 否 |
 
-此外还定义了宽度分类常量：
-- `DataTypeWidth32 = 4`（32-bit 精度类型）
-- `DataTypeWidth16 = 2`（16-bit 精度类型）
-- `DataTypeWidth8 = 1`（8-bit 精度类型）
 
 ## 5. LocalMMU 任务类型
 

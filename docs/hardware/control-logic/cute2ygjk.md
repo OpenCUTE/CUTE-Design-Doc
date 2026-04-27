@@ -57,7 +57,7 @@ RoCC 指令的 `funct` 字段决定指令类型：
 | 16 | CLEAR_INST | 清除指令 |
 | 17 | QUERY_INST | 内部查询 |
 
-## 4. 微架构设计
+## 4. 模块功能
 
 ### 4.1 关键组件
 
@@ -86,34 +86,8 @@ RoCC 指令的 `funct` 字段决定指令类型：
 | Transpose | bool | 结果转置标志 |
 | Status | uint32 | 异步操作状态 |
 
-## 6. 编程模型
 
-CUTE 的异步编程模型仅需两类指令：
-
-```c
-// 异步发起矩阵乘法
-asyncMatMul(M, N, K, BaseA, BaseB, BaseC, BaseD, ...);
-
-// 同步等待完成
-checkMatmul();
-
-// 查询状态
-status = queryAcceleratorBusy();
-```
-
-**矩阵-向量交叠执行模式：**
-
-```c
-asyncMatMul(TILE_M, TILE_N, K, ...);     // tile 0
-for (i=1; i<num_tiles; i++) {
-    asyncMatMul(TILE_M, TILE_N, K, ...); // tile i
-    checkMatmul();                        // 等待 tile i-1 完成
-    // 向量单元处理 tile i-1 的 epilogue
-}
-checkMatmul();                            // 等待最后一个 tile
-```
-
-## 7. 与其他模块的交互
+## 6. 与其他模块的交互
 
 ```
 CPU ──RoCC──→ CUTE2YGJK ──RoCCControl──→ TaskController
@@ -121,7 +95,6 @@ CPU ──RoCC──→ CUTE2YGJK ──RoCCControl──→ TaskController
                   └──Cute2TL──→ TileLink Bus ──→ LLC/DRAM
 ```
 
-## 8. 参考
+## 7. 参考
 
 - 源码：`src/main/scala/CUTE2YGJK.scala`、`src/main/scala/config_ygjk.scala`
-- 论文：CUTE v2 (DAC 2026) — Section 3 Architecture Overview
