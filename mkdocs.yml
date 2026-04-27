@@ -76,8 +76,8 @@ nav:
       - 控制逻辑:
           - hardware/control-logic/index.md
           - 指令译码与调度: hardware/control-logic/task-controller.md
-          - 硬件参数配置: hardware/control-logic/cute-parameters.md
           - YGJK / RoCC 接口: hardware/control-logic/cute2ygjk.md
+      - 硬件参数配置: hardware/cute-parameters.md
       - 集成方案:
           - hardware/integration/index.md
           - Rocket 核集成: hardware/integration/rocket-core.md
