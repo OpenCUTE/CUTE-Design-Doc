@@ -1,5 +1,7 @@
 # 数据流控制器
 
+> **典型配置**：`Tensor_M = Tensor_N = 64`，`Matrix_M = Matrix_N = 4`，`ReduceWidthByte = 64`（ReduceWidth = 512 bit），`Tensor_K = 64`（ReduceGroupSize = 1），`ResultWidthByte = 4`。A/B SCP 各 4 KB，C SCP 16 KB，双缓冲总计 48 KB。
+
 ## 1. 术语说明
 
 | 术语 | 说明 |
@@ -86,15 +88,6 @@ CDC 是最复杂的 DataController，同时负责：
 3. **写回 C Scratchpad**：将结果写回（经过 AfterOps 后处理）
 4. **转置支持**：在写回时可对结果进行转置
 
-### 4.2 与其他模块的交互
-
-```
-C Scratchpad[i] ←─读取──── CDC ←─MatrixC──── MatrixTE
-                              │
-C Scratchpad[i] ←─写回── AfterOps ←─MatrixD──┘
-                              │
-                    VectorStreamInterface (预留)
-```
 
 ## 5. 参考
 

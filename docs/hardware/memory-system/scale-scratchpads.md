@@ -1,5 +1,7 @@
 # Scale Factor Scratchpad
 
+> **典型配置**：`Tensor_M = Tensor_N = 64`，`Matrix_M = Matrix_N = 4`，`ReduceWidthByte = 64`（ReduceWidth = 512 bit），`Tensor_K = 64`（ReduceGroupSize = 1），`ResultWidthByte = 4`。A/B SCP 各 4 KB，C SCP 16 KB，双缓冲总计 48 KB。
+
 ## 1. 术语说明
 
 | 术语 | 说明 |

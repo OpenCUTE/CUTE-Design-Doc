@@ -5,8 +5,7 @@
 | 术语 | 说明 |
 |------|------|
 | MTE | Matrix Tensor Engine，矩阵张量引擎，CUTE 的核心计算模块 |
-| FPE | Floating-Point Engine，浮点运算引擎，每个 PE 的内部计算逻辑 |
-| PE | Processing Element，处理单元，MTE 阵列中的基本计算节点 |
+| FPE | Flexible-Precision Engine，混合精度处理引擎，每个 PE 的内部计算逻辑 |
 | MAC | Multiply-Accumulate，乘加运算 |
 | Outer Product | 外积数据流，A 广播行方向、B 广播列方向 |
 | ScaleA/ScaleB | 块缩放因子，用于 MXFP/NVFP 等微缩放数据类型 |

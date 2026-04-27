@@ -1,10 +1,10 @@
-# FPE 浮点运算引擎
+# FPE 混合精度处理引擎
 
 ## 1. 术语说明
 
 | 术语 | 说明 |
 |------|------|
-| FPE | Floating-Point Engine，浮点运算引擎，CUTE 中每个 PE 的核心计算逻辑 |
+| FPE | Flexible-Precision Engine，混合精度处理引擎，CUTE 中每个 PE 的核心计算逻辑 |
 | FReducePE | FPE 的源码实现类名 |
 | Flow 1 | 标准多精度计算路径，所有浮点和整数格式统一经过 27-bit 对齐和归约 |
 | Flow 2 | E2M1（FP4）专用高吞吐路径，通过 LUT 转定点后绕过对阶逻辑，支持 2X/4X 吞吐量 |
