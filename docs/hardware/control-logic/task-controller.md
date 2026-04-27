@@ -1,4 +1,4 @@
-# 指令译码与调度（TaskController）
+# 指令译码与调度器（TaskController）
 
 ## 1. 术语说明
 
@@ -28,26 +28,24 @@ TaskController 是 CUTE 的控制中枢，负责从 CPU 接收矩阵运算指令
 3. **三阶段调度**：管理 Load → Compute → Store 三阶段的执行流水线
 4. **双缓冲管理**：跟踪 SCP 空闲状态，交替选择 SCP 组
 
-## 4. 微架构设计
+## 4. 模块设计
 
-### 4.1 指令组装
+### 4.1 配置寄存器
 
-CPU 通过多条 RoCC 指令逐步配置一个矩阵乘法任务：
+CPU 通过多条 RoCC 指令逐步填充 TaskController 内部的配置寄存器，完成一次矩阵乘法任务的参数设定：
 
-| RoCC funct | 内部 funct | 说明 |
-|------------|-----------|------|
-| 64 | 0 | SEND_MACRO_INST（触发计算） |
-| 65 | 1 | CONFIG_TENSOR_A（A 基地址 + 步长） |
-| 66 | 2 | CONFIG_TENSOR_B |
-| 67 | 3 | CONFIG_TENSOR_C |
-| 68 | 4 | CONFIG_TENSOR_D |
-| 69 | 5 | CONFIG_TENSOR_DIM（M, N, K + kernel_stride） |
-| 70 | 6 | CONFIG_CONV_PARAMS（数据类型、bias、转置、卷积参数） |
-| 71-72 | 7-8 | CONFIG_SCALE_A/B |
-| 80 | 16 | CLEAR_INST |
-| 81 | 17 | QUERY_INST |
+| 配置项 | 字段 |
+|--------|------|
+| 张量 A | 基地址、行偏移（Stride_M） |
+| 张量 B | 基地址、列偏移（Stride_N） |
+| 张量 C | 基地址、行偏移、列偏移 |
+| 张量 D | 基地址、行偏移、列偏移 |
+| 张量维度 | M、N、K、kernel_stride |
+| 计算参数 | 数据类型、bias 开关、转置开关、卷积参数 |
+| Scale A | 缩放因子基地址、参数 |
+| Scale B | 缩放因子基地址、参数 |
 
-配置指令逐步填充 `MacroInst_Reg` 的各字段，`SEND_MACRO_INST` 将完整配置推入 `MacroInst_FIFO`。
+配置寄存器逐步填充 `MacroInst_Reg` 的各字段。`SEND_MACRO_INST` 将完整配置推入 `MacroInst_FIFO`，触发计算。`CLEAR_INST` 清除配置，`QUERY_INST` 查询任务状态。
 
 ### 4.2 Tiling 循环分解
 
@@ -68,22 +66,8 @@ for M_tile in range(0, M, Tensor_M):
 - GEMM：直接按 M→N→K 三层循环分块
 - 卷积：增加 KH→KW 两层循环，并计算 im2col 参数
 
-### 4.3 三阶段 FSM
 
-每个阶段独立的 2 状态 FSM：
-
-```
-idle ──(MicroInst 可用 && 所有子模块就绪)──→ issue
-                                                    │
-                        (所有子模块完成信号) ←───────┘
-                              │
-                              ▼
-                            idle (取下一条微指令)
-```
-
-**资源依赖追踪**：三个 FIFO（`LoadMicroInst_Resource_Info_FIFO`、`ComputeMicroInst_Resource_Info_FIFO`、`StoreMicroInst_Resource_Info_FIFO`记录阶段间的资源依赖，确保 Compute 等待对应 Load 完成，Store 等待对应 Compute 完成。
-
-### 4.4 双缓冲管理
+### 4.3 双缓冲管理
 
 TaskController 维护 SCP 空闲状态向量：
 
@@ -112,10 +96,10 @@ TaskController 是 CUTE 的控制中心，与所有模块交互：
 
 ```
 CPU ──RoCC──→ TaskController ──┬──→ Loaders (AML/BML/ASL/BSL/CML)
-                                ├──→ DataControllers (ADC/BDC/CDC/ASC/BSC)
-                                ├──→ MatrixTE
-                                ├──→ AfterOps
-                                └──→ Scratchpad Selection
+                               ├──→ DataControllers (ADC/BDC/CDC/ASC/BSC)
+                               ├──→ MatrixTE
+                               ├──→ AfterOps
+                               └──→ Scratchpad Selection
 ```
 
 ## 7. 参考
