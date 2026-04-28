@@ -48,7 +48,7 @@
 | FP8/MXFP8 (E4M3/E5M2) | 1 | 32 |
 | FP16/BF16 | 2 | 16 |
 | TF32 | 4 | 8 |
-| FP4/NVFP4/MXFP4 | 1 | 32 |
+| FP4/NVFP4/MXFP4 | 0.5 | 64 |
 
 C Scratchpad 统一以 32-bit（FP32/INT32）宽度存储累加值和结果。
 
