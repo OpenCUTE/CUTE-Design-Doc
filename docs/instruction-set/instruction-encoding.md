@@ -6,153 +6,163 @@
 |------|------|
 | RoCC | Rocket Custom Coprocessor，Rocket 的协处理器接口协议 |
 | funct | RoCC 指令中的功能码字段（7 bit），决定具体操作 |
+| cfgData1 / cfgData2 | 指令的两个 64 位立即数操作数，分别通过 rs1 (x6) 和 rs2 (x7) 传递 |
 | MacroInst | 宏指令，描述一次完整矩阵乘法/卷积任务 |
-| MicroInst | 微指令，由宏指令分解得到的 Load/Compute/Store 操作 |
 
-## 2. 设计规格
+## 2. 指令编码格式
 
-| 参数 | 说明 |
-|------|------|
-| opcode | `0x0B`（CUSTOM0）用于配置/查询/计算；`0x2B`（CUSTOM1）用于中断响应 |
-| 指令格式 | R-type（32 bit） |
-| 寄存器约定 | rs1=x6(t1)=cfgData1, rs2=x7(t2)=cfgData2, rd=x5(t0)=返回值 |
-| funct 编码空间 | 0-63 为查询/控制类；64-127 为配置类 |
-| MacroInst FIFO 深度 | 4 |
-
-## 3. 功能描述
-
-### 3.1 指令编码格式
-
-![inst](inst.png)
+所有 CUTE 自定义指令均为 R-type 32 位格式：
 
 | 字段 | 位范围 | 说明 |
 |------|--------|------|
-| `opcode` | [6:0] | `0x0B`（CUSTOM0）或 `0x2B`（CUSTOM1） |
+| `opcode` | [6:0] | `0x0B`（CUSTOM0） |
 | `rd` | [11:7] | 目标寄存器，固定为 x5(t0) |
 | `xd` | [12] | 目标寄存器有效位 |
 | `xs1` | [13] | 源寄存器 1 有效位，固定为 1 |
 | `xs2` | [14] | 源寄存器 2 有效位，固定为 1 |
-| `rs1` | [19:15] | 源寄存器 1，固定为 x6(t1)，映射为 `cfgData1` |
-| `rs2` | [24:20] | 源寄存器 2，固定为 x7(t2)，映射为 `cfgData2` |
+| `rs1` | [19:15] | 源寄存器 1，固定为 x6(t1)，传递 cfgData1 |
+| `rs2` | [24:20] | 源寄存器 2，固定为 x7(t2)，传递 cfgData2 |
 | `funct7` | [31:25] | 功能选择字段 |
 
-### 3.2 查询/控制类指令（funct 0-63）
+**funct7 编码空间划分：**
+
+| funct7 范围 | 类别 | 处理方式 |
+|-------------|------|---------|
+| 0-63 | 查询/控制类 | CUTE2YGJK 直接处理 |
+| 64-127 | 配置类 | 转发到 TaskController（去掉 bit6 后为内部 funct 0-63） |
+
+## 3. 查询/控制类指令（funct 0-63）
 
 | funct | 名称 | 功能 | 返回值 (rd) |
 |-------|------|------|-------------|
-| 0 | COMPUTE_START | 启动加速器执行 FIFO 中的 MacroInst | 无 |
-| 1 | IS_RUNNING | 查询加速器是否忙碌 | `ac_busy` |
-| 2 | RUNNING_CYCLES | 查询总运行周期数 | 总 cycle 计数 |
-| 3 | MEM_READ_COUNT | 查询外部内存读请求数 | `memNum_r` |
-| 4 | MEM_WRITE_COUNT | 查询外部内存写请求数 | `memNum_w` |
-| 5 | COMPUTE_CYCLES | 查询纯计算周期数 | compute cycle 计数 |
-| 6 | FIFO_FINISH | 查询已完成的 MacroInst 位掩码 | `InstFIFO_Finish` |
-| 7 | FIFO_FULL | 查询 MacroInst FIFO 是否已满 | `InstFIFO_Full` |
-| 8 | FIFO_VALID | 查询 FIFO 中有效指令数 | `InstFIFO_Info` |
+| 1 | QUERY_ACCELERATOR_BUSY | 查询加速器是否正在运行 | 1=忙碌, 0=空闲 |
+| 2 | QUERY_RUNTIME | 查询加速器运行时钟周期数 | 周期计数 |
+| 3 | QUERY_MEM_READ_COUNT | 查询对外访存读次数 | 读请求计数 |
+| 4 | QUERY_MEM_WRITE_COUNT | 查询对外访存写次数 | 写请求计数 |
+| 5 | QUERY_COMPUTE_TIME | 查询纯计算时钟周期数 | 计算周期计数 |
+| 6 | QUERY_MACRO_INST_FINISH | 查询宏指令完成情况 | 位掩码（如 0010 表示 id=1 已完成） |
+| 7 | QUERY_MACRO_INST_FIFO_FULL | 查询宏指令队列是否已满 | 1=满, 0=未满 |
+| 8 | QUERY_MACRO_INST_FIFO_INFO | 查询宏指令队列当前指令数 | 位掩码（如 0010 表示 id=1 位置已有指令） |
 
-### 3.3 配置类指令（funct 64-127）
+## 4. 配置类指令（funct 64-127）
 
-配置类指令通过连续的多条指令组装一个 MacroInst，最后通过 `ISSUE_MARCO_INST` 提交到 FIFO。
+配置类指令通过连续的多条指令组装一个 MacroInst，最后通过 `SEND_MACRO_INST` 提交到 FIFO。
 
-**配置顺序：**
+**配置流程：**
 
 ```
-CONFIG_A_TENSOR → CONFIG_B_TENSOR → CONFIG_C_TENSOR → CONFIG_D_TENSOR
+CONFIG_TENSOR_A → CONFIG_TENSOR_B → CONFIG_TENSOR_C → CONFIG_TENSOR_D
        ↓                ↓                ↓                ↓
-CONFIG_MNK_KERNEL → CONFIG_CONV → ISSUE_MARCO_INST → COMPUTE_START
+CONFIG_TENSOR_DIM → CONFIG_CONV_PARAMS → CONFIG_SCALE_A/B (可选)
+       ↓
+SEND_MACRO_INST → (循环配置下一条 MacroInst)
 ```
 
-| funct | sub-funct | 名称 | cfgData1 (rs1) | cfgData2 (rs2) |
-|-------|-----------|------|----------------|----------------|
-| 64 | 0 | ISSUE_MARCO_INST | — | — |
-| 65 | 1 | CONFIG_A_TENSOR | A 基地址 | A 步长 |
-| 66 | 2 | CONFIG_B_TENSOR | B 基地址 | B 步长 |
-| 67 | 3 | CONFIG_C_TENSOR | C 基地址 | C 步长 |
-| 68 | 4 | CONFIG_D_TENSOR | D 基地址 | D 步长 |
-| 69 | 5 | CONFIG_MNK_KERNEL | M[19:0] \| N[39:20] \| K[59:40] | kernel_stride |
-| 70 | 6 | CONFIG_CONV | 见下方位段 | 见下方位段 |
-| 80 | 16 | FIFO_DEQUEUE | — | — |
-| 81 | 17 | FIFO_GET_TAIL_INDEX | — | — |
+### 4.1 指令总表
 
-**CONFIG_CONV 指令的 cfgData1 位段：**
+| funct | 内部 funct | 名称 | 说明 |
+|-------|-----------|------|------|
+| 64 | 0 | SEND_MACRO_INST | 发送已配置的宏指令到 FIFO |
+| 65 | 1 | CONFIG_TENSOR_A | 配置 A 张量的基地址和步长 |
+| 66 | 2 | CONFIG_TENSOR_B | 配置 B 张量的基地址和步长 |
+| 67 | 3 | CONFIG_TENSOR_C | 配置 C 张量的基地址和步长 |
+| 68 | 4 | CONFIG_TENSOR_D | 配置 D 张量的基地址和步长 |
+| 69 | 5 | CONFIG_TENSOR_DIM | 配置张量维度 (M, N, K) |
+| 70 | 6 | CONFIG_CONV_PARAMS | 配置数据类型、卷积参数 |
+| 71 | 7 | CONFIG_SCALE_A | 配置 A Scale 的基地址 |
+| 72 | 8 | CONFIG_SCALE_B | 配置 B Scale 的基地址 |
+| 80 | 16 | CLEAR_INST | 清除队尾的宏指令 |
+| 81 | 17 | QUERY_INST | 查询已完成宏指令的尾编号位置 |
 
-| 位段 | 字段 | 说明 |
-|------|------|------|
-| [7:0] | `element_type` | 数据类型编码（3 bit） |
-| [15:8] | `bias_type` | Bias 加载类型（4 bit） |
-| [23:16] | `transpose_result` | 结果转置标志 |
-| [31:24] | `conv_stride` | 卷积步长 |
-| [47:32] | `conv_oh_max` | 卷积输出高度 OH 维度 |
-| [63:48] | `conv_ow_max` | 卷积输出宽度 OW 维度 |
+### 4.2 张量配置指令字段
 
-**CONFIG_CONV 指令的 cfgData2 位段：**
+CONFIG_TENSOR_A/B/C/D 共享相同的字段格式：
+
+**cfgData1：**
 
 | 位段 | 字段 | 说明 |
 |------|------|------|
-| [3:0] | `kernel_size` | 卷积核大小 |
-| [18:4] | `conv_oh_per_add` | 预计算的 OH 递增量 |
-| [33:19] | `conv_ow_per_add` | 预计算的 OW 递增量 |
-| [48:34] | `conv_oh_index` | 当前 OH 索引 |
-| [63:49] | `conv_ow_index` | 当前 OW 索引 |
+| [63:0] | BaseVaddr | 张量基地址 |
 
-### 3.4 中断响应指令（opcode 0x2B）
+**cfgData2：**
+
+| 位段 | 字段 | 说明 |
+|------|------|------|
+| [63:0] | Stride | 张量步长 |
+
+### 4.3 CONFIG_TENSOR_DIM 字段
+
+**cfgData1：**
+
+| 位段 | 字段 | 说明 |
+|------|------|------|
+| [19:0] | Application_M | 张量 M 维度（矩阵乘时为行数） |
+| [39:20] | Application_N | 张量 N 维度（矩阵乘时为列数） |
+| [59:40] | Application_K | 张量 K 维度（归约维度） |
+
+**cfgData2：**
+
+| 位段 | 字段 | 说明 |
+|------|------|------|
+| [63:0] | kernel_stride | 卷积核步长（矩阵乘时填 0） |
+
+### 4.4 CONFIG_CONV_PARAMS 字段
+
+**cfgData1：**
+
+| 位段 | 字段 | 说明 |
+|------|------|------|
+| [7:0] | element_type | 数据类型编码（见数据类型章节） |
+| [15:8] | bias_type | 偏置加载类型（0=未定义, 1=填零, 2=行广播, 3=完整加载） |
+| [23:16] | transpose_result | 结果转置标志（0=不转置, 1=转置） |
+| [31:24] | conv_stride | 卷积步长 |
+| [47:32] | conv_oh_max | 卷积输出高度最大值 |
+| [63:48] | conv_ow_max | 卷积输出宽度最大值 |
+
+**cfgData2：**
+
+| 位段 | 字段 | 说明 |
+|------|------|------|
+| [7:0] | kernel_size | 卷积核大小 |
+| [25:16] | conv_oh_per_add | 输出高度每次增加量 |
+| [35:26] | conv_ow_per_add | 输出宽度每次增加量 |
+| [45:36] | conv_oh_index | 输出高度起始值 |
+| [55:46] | conv_ow_index | 输出宽度起始值 |
+
+### 4.5 CONFIG_SCALE_A / CONFIG_SCALE_B 字段
+
+**cfgData1：**
+
+| 位段 | 字段 | 说明 |
+|------|------|------|
+| [63:0] | Scale_BaseVaddr | 缩放因子基地址 |
+
+cfgData2 未使用。
+
+## 5. 中断响应指令（opcode 0x2B）
 
 | funct | 名称 | 功能 |
 |-------|------|------|
-| 0 | INTERRUPT_ACK | 确认中断，加速器从 `jk_resp` 返回 `jk_idle` 状态 |
+| 0 | INTERRUPT_ACK | 确认中断，加速器回到空闲状态 |
 
-## 4. 微架构设计
+## 6. 头文件自动生成
 
-### 4.1 MacroInst 结构
+CUTE 提供头文件自动生成工具，从 `CUTEParameters.scala` 中的指令定义自动生成 C 语言头文件：
 
-MacroInst 是 CUTE 的核心任务描述单元：
+- **`datatype.h.generated`**：13 种数据类型枚举和位宽查询宏
+- **`validation.h.generated`**：硬件参数常量（Tensor 维度、SCP 配置、MMU 参数等）
+- **`instruction.h.generated`**：指令 funct 常量、字段位段定义、提取/组装宏、包装函数
 
-| 字段 | 位宽 | 说明 |
-|------|------|------|
-| `A/B/C/D_BaseVaddr` | 64 bit ×4 | 各矩阵基地址 |
-| `A/B/C/D_Stride` | 64 bit ×4 | 各矩阵步长 |
-| `M/N/K` | 17 bit ×3 | 矩阵维度 |
-| `element_type` | 3 bit | 数据类型编码 |
-| `bias_type` | 4 bit | Bias 加载类型 |
-| `transpose_result` | 1 bit | 结果转置标志 |
-| `kernel_size` / `kernel_stride` | 4+64 bit | 卷积核参数 |
+**使用方法：**
 
-### 4.2 Macro-to-Micro 分解
-
-TaskController 将每条 MacroInst 按以下循环分解为微指令序列：
-
-```
-for OH/OW (or M position):
-  for N_tile (step = Tensor_N):
-    for KH × KW (conv only):
-      for K_tile (step = Tensor_K / element_bytes):
-        → LoadMicroInst
-        → ComputeMicroInst
-    → StoreMicroInst
+```bash
+cd chipyard && source env.sh
+./scripts/generate-headers.sh [CONFIG_NAME] [OUTPUT_DIR]
+# 默认：chipyard.CUTE2TopsSCP64Config → cutetest/include/
 ```
 
-相邻 tile 的 Load 和 Compute 通过双缓冲 Scratchpad 重叠执行。
+## 7. 参考
 
-### 4.3 状态机
-
-| 当前状态 | 触发条件 | 下一状态 | 说明 |
-|----------|----------|----------|------|
-| `jk_idle` | `COMPUTE_START` | `jk_compute` | 开始执行 FIFO 中的 MacroInst |
-| `jk_compute` | `acc_running=false` | `jk_resp` | 全部 MacroInst 执行完毕 |
-| `jk_resp` | `INTERRUPT_ACK`（opcode=0x2B） | `jk_idle` | CPU 确认中断，回到空闲 |
-
-## 5. 与其他模块的交互
-
-```
-CPU ──RoCC──→ CUTE2YGJK ──RoCCControl──→ TaskController
-                │
-                └──Cute2TL──→ TileLink Bus ──→ LLC/DRAM
-```
-
-## 6. 参考
-
-- 源码：`src/main/scala/CUTE2YGJK.scala`
-- 参数定义：`src/main/scala/CUTEParameters.scala`
-- 任务控制器：`src/main/scala/TaskController.scala`
-- 软件头文件：`cutetest/base_test/ygjk.h`
-- 软件辅助宏：`cutetest/base_test/cuteMarcoinstHelper.h`
+- 指令定义：`src/main/scala/CUTEParameters.scala`（`CuteInstConfigs`、`YGJKInstConfigs`）
+- 头文件生成：`src/main/scala/util/HeaderGenerator.scala`
+- 生成脚本：`scripts/generate-headers.sh`

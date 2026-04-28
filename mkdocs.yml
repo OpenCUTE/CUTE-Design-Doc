@@ -85,8 +85,8 @@ nav:
           - Shuttle 核集成: hardware/integration/shuttle-core.md
   - 指令集:
       - instruction-set/index.md
-      - YGJK 指令编码: instruction-set/instruction-encoding.md
-      - 融合算子说明: instruction-set/fusion-operators.md
+      - 控制寄存器含义/ROCC指令编码: instruction-set/instruction-encoding.md
+      - 张量融合操作: instruction-set/fusion-operators.md
       - 指令速查表: instruction-set/instruction-reference.md
   - 数据类型:
       - datatypes/index.md
