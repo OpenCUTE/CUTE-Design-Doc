@@ -16,5 +16,7 @@ Thumbs.db
 .idea/
 
 .venv/
-.github/
+.github/*
+!.github/workflows/
+!.github/workflows/**
 paper

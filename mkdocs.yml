@@ -2,11 +2,6 @@ site_name: CUTE Design Document
 site_description: CPU 集成张量加速器设计文档
 site_author: CUTE Team
 
-# 抑制 mkdocs-material 关于 MkDocs 2.0 的警告
-# 详情：https://squidfunk.github.io/mkdocs-material/blog/2026/02/18/mkdocs-2.0/
-environment:
-  MKDOCS_MATERIAL_WARN: "false"
-
 theme:
   name: material
   language: zh
