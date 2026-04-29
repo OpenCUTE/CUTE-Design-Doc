@@ -1,5 +1,7 @@
 # CUTE 设计文档仓库
 
+围绕CUTE进行的开源设施～[OpenCUTE](https://github.com/OpenCUTE)。
+
 CUTE（CPU-centric and Ultra-utilized Tensor Engine）设计文档，基于 MkDocs + mkdocs-material 构建。
 
 ## 快速开始

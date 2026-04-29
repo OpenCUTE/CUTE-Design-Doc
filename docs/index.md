@@ -1,5 +1,7 @@
 # CUTE 设计文档
 
+围绕CUTE进行的开源设施～[OpenCUTE](https://github.com/OpenCUTE)。
+
 ## 前言
 
 本文档是 CUTE 硬件加速器的微架构设计文档，面向芯片设计工程师、验证工程师和系统集成工程师，提供以下内容：
