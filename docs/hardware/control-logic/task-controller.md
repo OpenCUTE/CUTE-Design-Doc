@@ -66,7 +66,6 @@ for M_tile in range(0, M, Tensor_M):
 - GEMM：直接按 M→N→K 三层循环分块
 - 卷积：增加 KH→KW 两层循环，并计算 im2col 参数
 
-
 ### 4.3 双缓冲管理
 
 TaskController 维护 SCP 空闲状态向量：

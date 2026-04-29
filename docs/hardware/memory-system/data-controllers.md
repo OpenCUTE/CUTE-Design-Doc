@@ -26,7 +26,6 @@
 
 ADC 和 BDC 负责从 Scratchpad 中按正确顺序读取数据，供给 MTE 计算阵列。
 
-
 **地址生成：**
 - ADC：`next_addr = M_Iterator × K_IteratorMax + K_Iterator`
 - BDC：`next_addr = N_Iterator × K_IteratorMax + K_Iterator`
@@ -87,7 +86,6 @@ CDC 是最复杂的 DataController，同时负责：
 2. **接收 D 结果**：接收 MTE 的计算结果
 3. **写回 C Scratchpad**：将结果写回（经过 AfterOps 后处理）
 4. **转置支持**：在写回时可对结果进行转置
-
 
 ## 5. 参考
 

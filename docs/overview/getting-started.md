@@ -101,12 +101,15 @@ CUTE/
 ## 6. 常见问题
 
 ### Q: Verilator 编译失败？
+
 确保 Verilator 版本 ≥ 5.0，且 chipyard 子模块已正确初始化。
 
 ### Q: 测试程序无法运行？
+
 确认已执行 `setup-get-rvv-toolchain.sh` 安装工具链，且 `.riscv` 文件路径正确。
 
 ### Q: 如何修改硬件参数？
+
 修改 `src/main/scala/CUTEParameters.scala` 中的参数，或创建新的 Config 类。
 
 ## 7. 相关链接

@@ -86,7 +86,6 @@ RoCC 指令的 `funct` 字段决定指令类型：
 | Transpose | bool | 结果转置标志 |
 | Status | uint32 | 异步操作状态 |
 
-
 ## 6. 与其他模块的交互
 
 ```

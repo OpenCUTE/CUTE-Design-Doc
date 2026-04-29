@@ -84,7 +84,6 @@ CUTE 支持 13 种数据类型，4-bit 编码（`DataTypeBitWidth = 4`）：
 | 11 | `DataTypefp8e4m3F32` | FP8 E4M3 | FP8 E4M3 | FP32 | 否 |
 | 12 | `DataTypefp8e5m2F32` | FP8 E5M2 | FP8 E5M2 | FP32 | 否 |
 
-
 ## 5. LocalMMU 任务类型
 
 | 编码 | 名称 | 说明 |

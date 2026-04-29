@@ -122,7 +122,6 @@ Scale 因子以 FP8 E5M2 格式存储，每个 Scale 组覆盖 `MinGroupSize`（
 | CDataController | → DResult | 输出计算结果 |
 | TaskController | → opcode | 配置数据类型和计算模式 |
 
-
 ## 7. 参考
 
 - 源码：`src/main/scala/MatrixTE.scala`

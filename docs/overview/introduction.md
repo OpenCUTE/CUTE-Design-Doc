@@ -50,4 +50,3 @@ CUTE 围绕这两个维度展开设计：
 
 - [CUTE v1: A scalable CPU-centric and Ultra-utilized Tensor Engine for convolutions](https://www.sciencedirect.com/science/article/pii/S1383762124000432)
 - [CUTE v2: DAC 2026](https://arxiv.org/abs/2604.11615) — 统一可配置的 CPU 矩阵扩展架构
-

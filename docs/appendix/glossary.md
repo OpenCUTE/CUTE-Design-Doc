@@ -3,7 +3,7 @@
 ## 1. 项目与架构
 
 | 术语 | 英文 | 说明 |
-|------|------|------|
+| --- | --- | --- |
 | CUTE | CPU-centric and Ultra-utilized Tensor Engine | 本项目的加速器名称 |
 | UCME | Unified and Configurable Matrix Extension | CUTE 的学术论文名称 |
 | RoCC | Rocket Custom Coprocessor | RISC-V 自定义协处理器接口协议，CUTE 通过此接口与 CPU 通信 |
@@ -14,7 +14,7 @@
 ## 2. 硬件模块
 
 | 术语 | 英文 | 说明 |
-|------|------|------|
+| --- | --- | --- |
 | MTE | Matrix Tensor Engine | 矩阵张量引擎，CUTE 的核心计算模块，包含 M×N 个 PE |
 | PE | Processing Element | 处理单元，执行乘加运算的基本单元 |
 | FReducePE | Float Reduce Processing Element | 支持多精度浮点的归约 PE，CUTE 当前使用的 PE 实现 |
@@ -26,7 +26,7 @@
 ## 3. 存储系统
 
 | 术语 | 英文 | 说明 |
-|------|------|------|
+| --- | --- | --- |
 | Scratchpad | — | 便笺式存储器，片上 SRAM，用于暂存矩阵 tile 数据 |
 | SCP | Scratchpad | Scratchpad 的缩写 |
 | 双缓冲 | Double Buffering | 每种 Scratchpad 实例化 ×2，交替使用以实现 Load/Compute 流水线重叠 |
@@ -36,7 +36,7 @@
 | SCP Fill Table | — | 用于将宽内存响应拆分写入窄 SCP Bank 的映射表 |
 
 | 模块缩写 | 全称 | 说明 |
-|---------|------|------|
+| --- | --- | --- |
 | ASP / BSP / CSP | A/B/C Scratchpad | 数据暂存 |
 | ASSP / BSSP | A/B Scale Scratchpad | 缩放因子暂存 |
 | ADC / BDC / CDC | A/B/C DataController | 数据控制器，从 SCP 向 MTE 供数 |
@@ -47,7 +47,7 @@
 ## 4. 数据类型与量化
 
 | 术语 | 英文 | 说明 |
-|------|------|------|
+| --- | --- | --- |
 | ElementDataType | — | CUTE 的数据类型枚举，4-bit 编码，定义 13 种类型 |
 | DataTypeBitWidth | — | 数据类型编码位宽，当前为 4 |
 | MXFP | Microscaling Floating Point | OCP 定义的微缩放浮点格式，每 N 个元素共享一个缩放因子 |
@@ -64,7 +64,7 @@
 ## 5. 指令与编程
 
 | 术语 | 英文 | 说明 |
-|------|------|------|
+| --- | --- | --- |
 | MacroInst | Macro Instruction | 宏指令，描述一次完整矩阵乘法或卷积任务 |
 | MicroInst | Micro Instruction | 微指令，由宏指令分解得到的单次 Load/Compute/Store 操作 |
 | asyncMatMul | Asynchronous Matrix Multiplication | 异步矩阵乘法接口，发起计算后立即返回 |
@@ -76,7 +76,7 @@
 ### 指令 funct 编码
 
 | funct | 名称 | 说明 |
-|-------|------|------|
+| --- | --- | --- |
 | 0 | `SEND_MACRO_INST` | 将配置好的指令推入 MacroInst FIFO |
 | 1-4 | `CONFIG_TENSOR_A/B/C/D` | 配置张量基地址和步长 |
 | 5 | `CONFIG_MNK` | 配置矩阵维度 M/N/K |
@@ -87,7 +87,7 @@
 ## 6. Tile 与分块
 
 | 术语 | 英文 | 说明 |
-|------|------|------|
+| --- | --- | --- |
 | Tile | — | 将大矩阵划分为 SCP 可容纳的子矩阵，逐步计算 |
 | Tensor_M | — | 输出矩阵行方向的 tile 大小 |
 | Tensor_N | — | 输出矩阵列方向的 tile 大小 |
@@ -98,7 +98,7 @@
 ## 7. 性能与配置
 
 | 术语 | 英文 | 说明 |
-|------|------|------|
+| --- | --- | --- |
 | TOPS | Tera Operations Per Second | 每秒万亿次运算 |
 | FReduce | Float Reduce | 浮点归约，将多个乘积累加为一个浮点结果 |
 | Outer Product | — | 外积数据流，A 按行广播、B 按列广播 |
@@ -110,7 +110,7 @@
 ## 8. 集成平台
 
 | 术语 | 英文 | 说明 |
-|------|------|------|
+| --- | --- | --- |
 | Rocket | — | 顺序执行 RISC-V 核，CUTE 的基准集成平台 |
 | BOOM | Berkeley Out-of-Order Machine | 乱序执行 RISC-V 核 |
 | Shuttle | — | 3 发射 RISC-V 核，支持 Saturn VPU 向量扩展 |
