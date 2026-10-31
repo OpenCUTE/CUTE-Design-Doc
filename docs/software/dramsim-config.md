@@ -17,6 +17,10 @@ CUTE 使用 DRAMSim2 作为 Verilator 仿真中的内存模型。由于矩阵运
 
 CUTE 提供 6 种带宽预设配置：
 
+当前 config-first / system runner 使用 `configs/memconfigs/dramsim2/` 下的配置。
+`cutetest/dramsim_config/` 保留旧实验副本。目录中的带宽名称是实验预设标签，
+实际时序还取决于设备参数、通道、总线和时钟配置。
+
 | 配置目录 | 带宽 | 适用场景 |
 |---------|------|---------|
 | `dramsim2_ini_8GB_per_s/` | 8 GB/s | 低带宽场景，测试带宽受限情况 |
@@ -50,27 +54,34 @@ CUTE 提供 6 种带宽预设配置：
 
 ### 5.1 选择配置
 
-在运行仿真时通过环境变量或配置文件指定 DRAMSim 配置目录：
+当前 `cute-run.py` 读取 HWConfig 的 `memory.model` 和 `memory.config`，生成
+`+dramsim` 与 `+dramsim_ini_dir=...` 参数。例如，按主文档的 [系统构建](/build-system/)
+生成 ELF 后，从 OpenCUTE 仓库根目录执行：
 
 ```bash
-# 使用高带宽配置进行性能评估
-export DRAMSIM_CONFIG=dramsim2_ini_64GB_per_s
-./scripts/run-simulator-test.sh CUTE2TopsSCP64Config test.riscv
-
-# 使用低带宽配置暴露内存瓶颈
-export DRAMSIM_CONFIG=dramsim2_ini_8GB_per_s
-./scripts/run-simulator-test.sh CUTE2TopsSCP64Config test.riscv
+python3 tools/runner/cute-run.py \
+  --hwconfig cute4tops_shuttle512_d512_v512_m512_sysbus512_membus1_core_dramsim48 \
+  --test ../opencute-out/system/build/sdk/system/system_int8_verilator.riscv
 ```
+
+该 HWConfig 引用 `dramsim2_ini_48GB_per_s`。需要其他带宽时，在自己的 HWConfig
+中选择相应 `memory.config`，按 [配置检查](/configuration/) 验证引用。
+系统和模型 runner 从构建清单读取 HWConfig 对应的 DRAM 配置，无需另填目录，完整
+命令见 [运行程序与结果](/running/)。显式指定 `--dram-config` 时，也必须与清单一致。
+
+旧 `scripts/run-simulator-test.sh` 本身不读取 `DRAMSIM_CONFIG` 环境变量；仅设置
+该变量不能作为带宽已切换的证据。以运行包中的实际命令和配置为准。
 
 ### 5.2 配置选择建议
 
 | 测试目标 | 推荐配置 | 说明 |
 |---------|---------|------|
-| 功能验证 | 任意 | 带宽不影响功能正确性 |
-| 性能评估 | 32/64 GB/s | 接近真实硬件带宽 |
+| 功能验证 | 已验收配置起步，再覆盖其他延迟 | 时序变化可能暴露同步或 buffer 复用问题 |
+| 性能评估 | 与目标系统匹配的配置 | 记录带宽、延迟、通道和时钟，不能只看目录名称 |
 | 带宽瓶颈分析 | 8/16 GB/s | 暴露内存瓶颈 |
 
 ## 6. 参考
 
-- 配置目录：`cutetest/dramsim_config/`
+- 当前配置目录：`configs/memconfigs/dramsim2/`
+- 历史配置目录：`cutetest/dramsim_config/`
 - DRAMSim2 项目：https://github.com/dramsim2/dramsim2

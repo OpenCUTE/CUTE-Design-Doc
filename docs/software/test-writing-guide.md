@@ -1,5 +1,11 @@
 # 测试编写指南
 
+本文保留 `cutetest` 的旧 helper 和实验代码写法。新测试使用
+[SDK case 与 checkpoint 接入](/sdk/testing/model-case/)；同步、任务版本和验收条件见
+[系统级验证](/system-verification/)。下面示例中的打印和计数器不检查全部输出，
+即使程序退出或打印 `Pass!`，也不能据此判定数值正确。FP16/卷积示例不在本次
+INT8 系统验收范围内，运行前需核对所用配置及旧 helper 接口。
+
 ## 1. 术语说明
 
 | 术语 | 说明 |
@@ -15,7 +21,7 @@
 
 矩阵乘法测试的基本流程：**配置 A/B/C/D 张量 → 配置维度 → 配置数据类型 → 发送宏指令 → 等待完成 → 读取结果**。
 
-#### 完整示例
+#### 旧 helper 调用示例
 
 ```c
 #include "marchid.h"
@@ -61,7 +67,7 @@ int main() {
     uint64_t write_req = YGJK_INS_RRR(0, 0, 0, 4);  // 内存写请求次数
     uint64_t comp_cycles = YGJK_INS_RRR(0, 0, 0, 5); // 计算周期数
 
-    printf("Pass! read=%lu write=%lu compute=%lu\n",
+    printf("Counters: read=%lu write=%lu compute=%lu\n",
            read_req, write_req, comp_cycles);
 
     return 0;
@@ -254,4 +260,4 @@ riscv64-unknown-elf-gcc -std=gnu99 -g -O3 \
 - 指令编码宏：`cutetest/base_test/ygjk.h`
 - 高级 API：`cutetest/base_test/cuteMarcoinstHelper.h`
 - 测试示例：`cutetest/base_test/cute_Matmul_mnk_128_128_128_zeroinit.c`
-- 性能分析：`scripts/PERFORMANCE_ANALYSIS_GUIDE.md`
+- 日志与事件诊断：[trace 开发文档](/trace/development/)

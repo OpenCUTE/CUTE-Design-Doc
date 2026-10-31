@@ -1,119 +1,43 @@
 # 快速上手指南
 
-## 1. 环境准备
+从 CUTE 仓库根目录选择下面的入口。硬件设计站解释模块和接口，跨模块命令集中
+维护在主指南，避免两套构建说明随代码变化而分歧。
 
-### 1.1 系统依赖
+## 选择工作流
 
-- **Java**: JDK 17+（SBT 运行时）
-- **SBT**: Scala 构建工具
-- **Verilator**: 用于 C++ 级仿真
-- **GCC RISC-V 工具链**: 用于编译测试程序
-- **DRAMSim3**: 内存仿真（可选）
+| 目标 | 使用入口 | 下一步 |
+|---|---|---|
+| 理解仓库、依赖和当前状态 | [主指南](/repository/) | 检查顶层及相关子模块版本 |
+| 从 YAML 生成配置和 simulator | [构建系统](/build-system/) | 使用 `cute-build.py` 和 HWConfig |
+| 修改参数、ISA 或生成文件 | [配置与代码生成](/configuration/) | 改来源文件，再运行对应生成器 |
+| 编译 SDK 并运行已有测试 | [SDK 入门](/sdk/getting-started/) | 选择 suite 或 system 流程 |
+| 验证 CUTE/RVV 输出和同步 | [系统级验证](/system-verification/) | 同源双 ELF、QEMU 校准、RTL 全输出比较 |
+| 运行 BERT / LLaMA 阶段 | [模型构建](/build-system/#model-builds) | 使用独立 profile 和运行目录 |
 
-### 1.2 初始化环境
+## 环境与配置
 
-```bash
-cd CUTE
-./scripts/setup-env.sh
-```
+已有环境激活 `chipyard/env.sh` 或本机工具环境。全新 checkout 才按
+[环境准备](/build-system/) 初始化子模块并安装工具；`scripts/setup-env.sh`
+会下载和构建依赖，不能作为工具找不到时的通用修复操作。
 
-该脚本将：
-1. 初始化 git 子模块（chipyard 等）
-2. 配置 chipyard 环境
-3. 下载必要的依赖
+硬件配置引用关系为 `HWConfig → ChipyardConfig → CuteConfig + ISA + VectorVersion`。
+生成的 Chipyard Scala 配置位于
+`chipyard/generators/chipyard/src/main/scala/config/CuteConfig.scala`。
+修改参数时先找到对应 YAML；不要直接改生成类来绕过配置检查。
 
-### 1.3 安装 RISC-V 工具链
+## 历史 cutetest
 
-```bash
-./scripts/setup-get-rvv-toolchain.sh
-```
+`scripts/build-verilog.sh`、`build-simulator.sh`、`build-test.sh` 和
+`run-simulator-test.sh` 保留旧 Chipyard / cutetest 流程。旧 `CUTE2TopsSCP64Config`
+等配置名称仍用于这些实验，但不能代替当前 system profile 的配置与构建清单。
 
-下载预编译的 RISC-V Vector (RVV) 工具链，用于编译测试 C 代码。
+`cutetest/transformer_test/bert` 和 `llama` 提供阶段程序及调度变体；数字后缀的
+计算含义见 [测试框架](../software/test-framework.md)，不能按完整模型层号理解。
+新迁移使用 `cute-sdk/tests/models` 中的确定非零输入和独立 reference。
 
-## 2. 编译与构建
+## 判断是否通过
 
-### 2.1 生成 Verilog
-
-```bash
-./scripts/build-verilog.sh CUTE2TopsSCP64Config
-```
-
-可用配置参见 `build/chipyard/config/CuteConfig.scala`，常用配置：
-
-| 配置名 | 说明 |
-|--------|------|
-| `CUTE2TopsSCP64Config` | 2 TOPS，64-bit SCP |
-| `CUTE4TopsSCP64Config` | 4 TOPS，64-bit SCP |
-
-### 2.2 构建仿真器
-
-```bash
-./scripts/build-simulator.sh CUTE2TopsSCP64Config
-```
-
-使用 Verilator 编译生成 C++ 仿真器。
-
-## 3. 编译测试程序
-
-```bash
-./scripts/build_cute_test.sh
-```
-
-将编译以下测试：
-
-- **base_test**: 基础 GEMM/Conv 测试和辅助工具
-- **gemm_test**: 不同维度的矩阵乘法测试
-- **resnet50_test**: ResNet50 卷积-向量融合核测试
-- **transformer_test**: BERT 和 LLaMA 的 GEMM-向量融合核测试
-
-## 4. 运行仿真
-
-```bash
-./scripts/run-simulator-test.sh \
-    CUTE2TopsSCP64Config \
-    /path/to/cutetest/base_test/cute_Matmul_mnk_128_128_128_zeroinit.riscv
-```
-
-输出：
-- **Debug Info**: 仿真调试信息
-- **UART log**: 程序串口输出
-
-## 5. 目录结构
-
-```
-CUTE/
-├── src/main/scala/       # Chisel 硬件设计源码
-├── cutetest/             # C 测试代码
-│   ├── base_test/        # 基础测试
-│   ├── gemm_test/        # GEMM 测试
-│   ├── resnet50_test/    # ResNet50 测试
-│   └── transformer_test/ # Transformer 测试
-├── CPU/                  # CPU 核集成方案
-│   ├── rocket/           # Rocket Chip
-│   ├── boom/             # BOOM
-│   └── shuttle/          # Shuttle
-├── cute-fpe/             # 混合精度 PE 项目
-├── scripts/              # 构建和部署脚本
-├── chipyard/             # Chipyard 框架（子模块）
-└── doc/                  # 文档
-```
-
-## 6. 常见问题
-
-### Q: Verilator 编译失败？
-
-确保 Verilator 版本 ≥ 5.0，且 chipyard 子模块已正确初始化。
-
-### Q: 测试程序无法运行？
-
-确认已执行 `setup-get-rvv-toolchain.sh` 安装工具链，且 `.riscv` 文件路径正确。
-
-### Q: 如何修改硬件参数？
-
-修改 `src/main/scala/CUTEParameters.scala` 中的参数，或创建新的 Config 类。
-
-## 7. 相关链接
-
-- [CUTE 论文](https://www.sciencedirect.com/science/article/pii/S1383762124000432)
-- [Chipyard 框架](https://github.com/ucb-bar/chipyard)
-- [Chisel 语言](https://www.chisel-lang.org/)
+编译成功、模拟器正常退出、日志打印 `Pass` 和全部输出验证通过是不同的结果。
+验收需保留输入、ELF、simulator、配置及报告身份，按
+[运行程序与结果](/running/) 判定。当前已覆盖的配置和用例见
+[能力与验收边界](/status/)。

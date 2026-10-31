@@ -1,162 +1,66 @@
-# 测试框架设计
+# 测试框架与实验来源
 
-## 1. 术语说明
+当前维护流程包括 SDK suite 和系统级验证。`cutetest` 保留历史实验来源，
+文件名、二进制或日志的存在不代表当前源码已通过对应测试。
 
-| 术语 | 说明 |
-|------|------|
-| Verilator | 开源 Verilog 仿真器，将 Verilog 编译为 C++ 执行 |
-| DRAMSim2 | DRAM 周期精确仿真器，模拟真实内存延迟和带宽 |
-| Tile 分块 | 将大矩阵划分为 SCP 容量范围内的子矩阵逐步计算 |
-| MacroInst | 宏指令，描述一次完整矩阵乘法或卷积任务 |
-| 宏指令融合 | 将多个小任务合并为一条宏指令，减少 CPU-加速器交互开销 |
-| TCM | Tightly Coupled Memory，紧耦合内存 |
+## 当前验证入口
 
-## 2. 测试架构总览
+| 流程 | 输入与执行 | 结果保证 |
+|---|---|---|
+| SDK suite / memverify | `tests/*.yaml`、case、已有 golden、Verilator trace | 按 case 选择位级或容差比较；用于已有测试开发 |
+| S1 系统基线 | 同源双裸机 ELF、独立数值参考、QEMU 与 RTL | DDR / TCM、同步、全部输出及 trace 完整性 |
+| 模型阶段 | `tests/models` 生成 profile、非零输入和逐任务输出 | BERT B1–B6 / LLaMA L1–L4，逐阶段 QEMU 校准与 RTL 字节比较 |
 
-CUTE 采用以应用场景驱动的测试架构，从基础功能验证到端到端 ML 模型推理共四个层级：
+构建与运行命令见 [主指南](/build-system/) 和 [SDK 入门](/sdk/getting-started/)。
+系统 runner 逐项核对构建清单，保留在线及离线报告。通过条件见
+[系统级验证](/system-verification/)，已验收用例见 [状态页](/status/)。
 
-| 层级 | 名称 | 测试内容 |
-|------|------|----------|
-| Level 4 | 端到端测试 | ML 模型推理（BERT/LLaMA/ResNet） |
-| Level 3 | 应用级测试 | GEMM 基准（多种尺寸和数据类型） |
-| Level 2 | 功能测试 | 矩阵乘法 / 卷积正确性验证 |
-| Level 1 | 基础测试 | 加速器通信、FIFO 操作 |
+## 历史 cutetest 的层次
 
-## 3. 测试层级详解
+| 目录 | 内容 | 使用时需核对 |
+|---|---|---|
+| `cutetest/base_test/` | 通信、FIFO、基础矩阵乘法和卷积 | 数据类型、输入、等待语义和输出比较方式 |
+| `cutetest/gemm_test/` | 不同 M/N/K 的 GEMM 实验 | tile 分解、矩阵布局、配置和产物版本 |
+| `cutetest/transformer_test/bert/` | BERT 各计算阶段及调度变体 | 整数近似、量化、残差顺序和原始形状 |
+| `cutetest/transformer_test/llama/` | LLaMA 计算阶段及 CPU / nofuse / notcm 对照 | 实际 FP16 格式、scale、RoPE、归约顺序 |
+| `cutetest/resnet50_test/` | 历史卷积负载与数据 | 不属于本次 SDK 迁移与验收范围 |
 
-### Level 1: 基础测试
+### BERT 阶段编号
 
-**定位：** 验证 CPU 与 CUTE 之间的基本通信和状态查询功能。
+| 原入口 | 计算阶段 | 新 case |
+|---|---|---|
+| `ibert_1.c` / `ibert-base-1.c` | Q/K/V 投影、量化与 V 转置 | `bert_1` |
+| `ibert_2.c` / `ibert-base-2.c` | 各 head 的 QKᵀ 与整数 softmax | `bert_2` |
+| `ibert_3.c` / `ibert-base-3.c` | 概率乘 V 与 head 拼接 | `bert_3` |
+| `ibert_4.c` / `ibert-base-4.c` | 输出投影、LayerNorm、残差 | `bert_4` |
+| `ibert_5.c` / `ibert-base-5.c` | FF1、bias、整数 GELU | `bert_5` |
+| `ibert_6.c` / `ibert-base-6.c` | FF2、bias、LayerNorm、残差 | `bert_6` |
 
-**测试目录：** `cutetest/base_test/`
+`ibert_1` 和 `ibert_2` 是不同计算阶段，不能作为“基本版/优化版”互相替代。
+`notcm`、`seg`、`softpipe` 等后缀描述对应阶段的实验变体。
 
-| 测试 | 说明 |
-|------|------|
-| `cutehello.c` | 加速器通信验证：发起一次卷积运算，验证 FIFO 状态和完成信号 |
-| FIFO 状态查询 | 验证 `fifo_valid_search`、`fifo_full_search`、`fifo_finish_search` |
-| 性能计数器 | 验证运行时间（funct 2）、读写请求计数（funct 3/4）、计算周期（funct 5） |
+### LLaMA 阶段编号
 
-### Level 2: 功能测试
+| 原入口 `llama3_1B_*.c` | 计算阶段 | 新 case / 状态 |
+|---|---|---|
+| `1`、`8` | attention / FFN RMSNorm 与 token 量化 | `llama_1` |
+| `2`、`3`、`4` | Q/K/V 投影、反量化、Q/K RoPE、V 转置 | `llama_2` |
+| `5`、`6` | 浮点矩阵 attention 相关阶段 | L5 后续范围 |
+| `7` | context 量化、输出投影、残差 | `llama_3` |
+| `9`、`10`、`11` | gate + SiLU、up + Hadamard、down + 残差 | `llama_4` |
 
-**定位：** 验证矩阵乘法和卷积运算的正确性。
+`llama3_1B_10.c` 是 FFN up/Hadamard 阶段，不是模型第 10 层。当前目录包含
+1–11 阶段及相应变体，没有旧文档所写的 `llama3_1B_70+` 阶段序列。
+`nofuse`、`notcm` 的历史调度及性能不能从新 DDR 串行 tile 实现的通过结果外推。
+迁移数值规则详见 [SDK 模型迁移](/sdk/testing/workload-migration/)。
 
-**测试目录：** `cutetest/base_test/`
+## 构建与诊断
 
-| 测试 | 说明 |
-|------|------|
-| `cute_Matmul_mnk_128_128_128_zeroinit.c` | 128×128×128 FP16 矩阵乘法（零初始化累加器） |
-| `cute_conv_mnk_49_128_128_k1_s1_oh7.c` | 卷积运算（kernel 1×1，stride 1） |
-| `get_matrix_test.c` | 矩阵测试数据生成工具 |
-| `get_conv_test.c` | 卷积测试数据生成工具 |
+当前入口位于 `tools/runner/`；旧实验还保留 `scripts/build-test.sh`、
+`build-verilog.sh`、`build-simulator.sh` 和 `run-simulator-test.sh`。
+两条路径需分别记录输入、配置、编译器和二进制身份，不能混用历史 `.riscv` 与新报告。
 
-**验证方式：** 测试数据以 C 头文件形式编译进二进制，仿真后通过 `compare_result.py` 与参考输出比对。
-
-### Level 3: 应用级测试（GEMM 基准）
-
-**定位：** 使用多种矩阵尺寸和数据类型验证加速器的功能和性能。
-
-**测试目录：** `cutetest/gemm_test/`
-
-每个测试包含 C 源文件（`.c`）、编译后的 RISC-V 二进制（`.riscv`）、反汇编文件（`.dump`）和参考模型（`compare_result.py`）。
-
-**典型测试矩阵：**
-
-| 矩阵尺寸 | M | N | K | 说明 |
-|---------|---|---|---|------|
-| 小矩阵 | 256 | 256 | 64 | 单 tile 内计算 |
-| 中等矩阵 | 512 | 512 | 256 | 多 tile 计算 |
-| 大 K 矩阵 | 512 | 512 | 1024 | K 维度远大于 tile |
-| 长尾 K | 512 | 512 | 10496/10752/11008 | 模拟 LLaMA 层的 K 维度 |
-
-### Level 4: 端到端测试（ML 模型推理）
-
-**定位：** 验证完整 ML 模型在 CUTE 上的推理正确性和性能。
-
-#### BERT 推理测试
-
-**目录：** `cutetest/transformer_test/bert/`
-
-| 测试 | 说明 |
-|------|------|
-| `ibert_1.c` | BERT 推理（基本版本） |
-| `ibert_2.c` | BERT 推理（优化版本） |
-| `ibert_2_notcm.c` | 不使用 TCM 的 BERT 推理 |
-| `ibert_2_seg.c` | 分段执行的 BERT 推理 |
-| `ibert_2_softpipe.c` | 软件流水线 BERT 推理 |
-| `check_transformer.py` | 结果验证脚本 |
-| `golden_cute.py` | Golden model 生成 |
-
-#### LLaMA3 推理测试
-
-**目录：** `cutetest/transformer_test/llama/`
-
-| 测试 | 说明 |
-|------|------|
-| `llama3_1B_10.c` | LLaMA3 1B 模型第 10 层 |
-| `llama3_1B_10_nofuse.c` | 同上（不使用宏指令融合） |
-| `llama3_1B_10_notcm.c` | 同上（不使用 TCM） |
-| `llama3_1B_11.c` ~ `llama3_1B_70+.c` | 更多层的测试 |
-| `gloden/` | 各层 Golden 结果 |
-
-每个测试提供三种变体用于对比：
-- **默认版本**：使用宏指令融合 + TCM
-- **nofuse 版本**：不使用宏指令融合（每条指令单独发送）
-- **notcm 版本**：不使用 TCM（Tightly Coupled Memory）
-
-#### ResNet50 卷积测试
-
-**目录：** `cutetest/resnet50_test/`
-
-| 测试 | 说明 |
-|------|------|
-| `vec_ops_conv_*.c` | 各卷积层的向量运算 |
-| `conv_1.h` ~ `conv_50+.h` | ResNet50 各层参数和测试数据 |
-| `compare_result.py` | 结果验证脚本 |
-
-## 4. 测试基础设施
-
-### 4.1 构建系统
-
-| 脚本 | 说明 |
-|------|------|
-| `scripts/build-verilog.sh` | Chisel → Verilog 生成 |
-| `scripts/build-simulator.sh` | Verilator 仿真器编译 |
-| `scripts/run-simulator-test.sh` | 运行仿真测试 |
-| `scripts/run-simulator-test-with-fst.sh` | 运行仿真并生成 FST 波形 |
-| `scripts/build-test.sh` | 编译测试程序 |
-| `scripts/generate-headers.sh` | 生成测试数据头文件 |
-
-### 4.2 RISC-V 工具链
-
-```
-工具链路径：tool/riscv/
-架构：rv64imafdcv
-ABI：lp64d
-编译器：riscv64-unknown-elf-gcc
-```
-
-编译选项：
-```makefile
-CFLAGS = -std=gnu99 -g -fno-common -fno-builtin-printf -Wall -O3
-ARCHFLAGS = -march=rv64imafdcv -mabi=lp64d
-LDFLAGS = -static -specs=htif_nano.specs
-```
-
-## 5. 性能分析框架
-
-CUTE 提供 4 级自顶向下性能分析方法论：
-
-| 级别 | 名称 | 关键指标 |
-|------|------|---------|
-| Level 1 | 系统级 | 总周期数、吞吐量、平均每条宏指令周期 |
-| Level 2 | 阶段级 | Config/Load/Compute/Store/Stall 各阶段占比 |
-| Level 3 | 组件级 | AML/BML/CML 负载平衡、MMU 停顿率、SCP 利用率 |
-| Level 4 | 微操作级 | 计算效率、内存绑定度、并行度 |
-
-分析工具：`scripts/perf_analysis.py`
-
-## 6. 参考
-
-- 测试目录：`cutetest/`
-- 性能分析指南：`scripts/PERFORMANCE_ANALYSIS_GUIDE.md`
-- 驱动接口：`cutetest/base_test/ygjk.h`、`cutetest/base_test/cuteMarcoinstHelper.h`
+性能分析可按总周期、Load/Compute/Store/Stall、组件访存和 tile 利用率逐层定位。
+当前仓库没有旧文档曾引用的 `scripts/perf_analysis.py` 或
+`scripts/PERFORMANCE_ANALYSIS_GUIDE.md`。分析现有事件从
+[trace 开发与诊断](/trace/development/) 开始；性能结论还需完整指标和重复实验记录。

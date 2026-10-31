@@ -30,7 +30,8 @@ plugins:
         - zh
         - en
       separator: '[\s\-\.]+|(?=[\u4e00-\u9fff\u3400-\u4dbf])|(?<=[\u4e00-\u9fff\u3400-\u4dbf])'
-  - mermaid2
+  - mermaid2:
+      javascript: assets/vendor/mermaid-10.4.0/mermaid.min.js
 
 markdown_extensions:
   - pymdownx.superfences:
@@ -93,9 +94,10 @@ nav:
       - 测试框架设计: software/test-framework.md
       - 测试编写指南: software/test-writing-guide.md
       - DRAMSim 配置说明: software/dramsim-config.md
-      - 基准测试结果: software/benchmark-results.md
+      - 历史性能与当前验收: software/benchmark-results.md
   - 附录:
       - appendix/index.md
       - 术语表: appendix/glossary.md
       - 参考文献: appendix/references.md
       - 变更记录: appendix/changelog.md
+  - OpenCUTE 主文档: /

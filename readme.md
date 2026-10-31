@@ -1,3 +1,5 @@
+> 整体构建与运行入口见 [OpenCUTE 主文档](../README.md)。统一严格构建使用 `tools/docs/build_docs.py`，当前能力以主文档状态页和运行报告为准。
+
 # CUTE 设计文档仓库
 
 围绕CUTE进行的开源设施～[OpenCUTE](https://github.com/OpenCUTE)。
