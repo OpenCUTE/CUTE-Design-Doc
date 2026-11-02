@@ -1,26 +1,37 @@
 # 软件与测试
 
-CUTE 软件通过 RoCC 自定义指令控制加速器。当前 SDK 提供 runtime、数值核、
-测试描述和数值参考；历史 `cutetest` 提供实验来源及调度变体。系统验证依据成功
-写 ack 重建内存，在软件任务完成时比较全部声明输出。
+CUTE 的软件生态包含驱动程序、测试框架和基准测试。驱动层通过 RISC-V 自定义指令（RoCC 接口）控制加速器；测试层从基础矩阵乘法到端到端 ML 模型推理覆盖多层级验证。
 
-## 代码与入口
+## 目录结构
 
-| 路径 | 内容 | 阅读入口 |
-|---|---|---|
-| `cute-sdk/cutelib/` | runtime、tensor、primitive、fusion、layer | [SDK 实现](/sdk/cutelib/primitive-and-fusion/) |
-| `cute-sdk/tests/system/` | DDR / TCM 基线、checkpoint 与 QEMU 契约 | [系统级验证](/system-verification/) |
-| `cute-sdk/tests/models/` | BERT B1–B6、LLaMA L1–L4 阶段、输入和 reference | [模型迁移](/sdk/testing/workload-migration/) |
-| `tools/runner/`、`tools/verify/` | 构建、运行、C++ 检查器和独立回放 | [运行结果](/running/) |
-| `cutetest/` | base/GEMM/卷积/Transformer 历史实验 | [测试框架](test-framework.md) |
-| `configs/memconfigs/dramsim2/` | 当前 runner 使用的内存模型配置 | [DRAMSim 配置](dramsim-config.md) |
+```
+CUTE/
+├── cutetest/                          # 软件测试程序
+│   ├── base_test/                     # 基础测试（hello world、矩阵乘法、卷积）
+│   │   ├── ygjk.h                     # 自定义指令宏定义
+│   │   └── cuteMarcoinstHelper.h      # 高级 C API 接口
+│   ├── gemm_test/                     # GEMM 基准测试（多种矩阵尺寸）
+│   ├── resnet50_test/                 # ResNet50 卷积层测试
+│   └── transformer_test/              # Transformer 模型测试
+│       ├── bert/                      # BERT 推理测试
+│       └── llama/                     # LLaMA3 推理测试（1B/2B/4B）
+├── tests/cute_benchmarks/             # 综合基准测试程序
+├── scripts/                           # 构建和运行脚本
+│   ├── build-verilog.sh               # Chisel → Verilog 生成
+│   ├── build-simulator.sh             # Verilator 仿真器构建
+│   ├── run-simulator-test.sh          # 仿真运行
+│   └── perf_analysis.py               # 性能分析脚本
+└── cutetest/dramsim_config/           # DRAMSim 内存仿真配置
+    ├── dramsim2_ini_8GB_per_s/
+    ├── dramsim2_ini_16GB_per_s/
+    └── ...                            # 共 6 种带宽配置（8-64 GB/s）
+```
 
-## 阅读顺序
+## 导航
 
-新增 SDK 测试按 [case 与 checkpoint 接入](/sdk/testing/model-case/) 操作。
-[测试编写指南](test-writing-guide.md) 保留旧 helper 的使用说明；其中示例需要
-匹配历史配置，不自动具备系统验证的事务完整性保证。
-
-[历史性能记录](benchmark-results.md) 与 [当前验收](/status/) 分别说明旧评估数据
-和本机已验证范围。当前 28 项模型阶段用例没有覆盖训练权重精度、完整模型推理
-或所有旧 TCM / double-buffer 调度。
+| 文档 | 说明 |
+|------|------|
+| [测试框架设计](test-framework.md) | 多层级测试架构和测试基础设施 |
+| [测试编写指南](test-writing-guide.md) | 测试编写方法和代码模板 |
+| [DRAMSim 配置说明](dramsim-config.md) | 内存仿真器配置参数 |
+| [基准测试结果](benchmark-results.md) | 性能数据和测试矩阵 |
